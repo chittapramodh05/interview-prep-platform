@@ -1,0 +1,168 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum InterviewStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  WRONG_ANSWER
+  RUNTIME_ERROR
+  COMPILE_ERROR
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String?
+  name          String
+  role          Role     @default(USER)
+  googleId      String?  @unique
+  refreshToken  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  resumes           Resume[]
+  mockInterviews    MockInterview[]
+  codingSubmissions CodingSubmission[]
+  analytics         Analytics[]
+  notifications     Notification[]
+  adminLogs         AdminLog[]
+
+  @@index([email])
+}
+
+model Resume {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileText  String   @db.Text
+  createdAt DateTime @default(now())
+
+  atsReport AtsReport?
+
+  @@index([userId])
+}
+
+model AtsReport {
+  id              String   @id @default(uuid())
+  resumeId        String   @unique
+  resume          Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  targetRole      String
+  score           Int
+  skillsExtracted Json     // Store as String[] JSON array
+  missingKeywords Json     // Store as String[] JSON array
+  improvementTips Json     // Store as String[] JSON array
+  rawFeedback     String   @db.Text
+  createdAt       DateTime @default(now())
+}
+
+model MockInterview {
+  id              String          @id @default(uuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobRole         String
+  difficulty      String          // EASY, MEDIUM, HARD
+  experienceLevel String          // ENTRY, MID, SENIOR
+  score           Int?
+  status          InterviewStatus @default(IN_PROGRESS)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  answers  InterviewAnswer[]
+
+  @@index([userId])
+}
+
+model InterviewAnswer {
+  id              String        @id @default(uuid())
+  mockInterviewId String
+  mockInterview   MockInterview @relation(fields: [mockInterviewId], references: [id], onDelete: Cascade)
+  question        String        @db.Text
+  userAnswer      String        @db.Text
+  aiFeedback      String        @db.Text
+  aiScore         Int
+  createdAt       DateTime      @default(now())
+
+  @@index([mockInterviewId])
+}
+
+model CodingQuestion {
+  id           String   @id @default(uuid())
+  title        String
+  description  String   @db.Text
+  constraints  String   @db.Text
+  difficulty   String   // EASY, MEDIUM, HARD
+  category     String
+  starterCode  Json     // Map of lang -> boilerplates
+  testCases    Json     // Array of input/output pairs
+  createdAt    DateTime @default(now())
+
+  submissions CodingSubmission[]
+}
+
+model CodingSubmission {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codingQuestionId String
+  codingQuestion   CodingQuestion   @relation(fields: [codingQuestionId], references: [id], onDelete: Cascade)
+  code             String           @db.Text
+  language         String
+  status           SubmissionStatus
+  score            Int              @default(0)
+  createdAt        DateTime         @default(now())
+
+  @@index([userId])
+  @@index([codingQuestionId])
+}
+
+model Analytics {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String   // e.g. "ATS", "MOCK_INTERVIEW", "CODING"
+  metricName   String   // e.g. "score", "time_spent", "completed"
+  metricValue  Float
+  recordedAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
