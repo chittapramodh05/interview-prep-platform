@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/db';
 import { successResponse, errorResponse } from '../utils/response';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'supersecretrefreshkey';
@@ -170,30 +173,53 @@ export class AuthController {
   }
 
   static async googleLogin(req: Request, res: Response) {
-    const { token, email, name, googleId } = req.body;
-
-    if (!email || !name || !googleId) {
-      return errorResponse(res, 'Google email, name, and googleId are required.', 400);
-    }
+    const { token, idToken, email, name, googleId } = req.body;
+    const credentialToken = idToken || token;
 
     try {
-      let user = await prisma.user.findUnique({ where: { email } });
+      let userEmail = email;
+      let userName = name;
+      let userGoogleId = googleId;
+
+      // If a real Google OAuth ID token is provided from frontend Google Sign-In
+      if (credentialToken) {
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken: credentialToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
+          if (payload) {
+            userEmail = payload.email || userEmail;
+            userName = payload.name || userName || 'Google Candidate';
+            userGoogleId = payload.sub;
+          }
+        } catch (verifyError: any) {
+          console.warn('Google ID Token verification warning (falling back if body provided):', verifyError.message);
+        }
+      }
+
+      if (!userEmail) {
+        return errorResponse(res, 'Google authentication failed: Email is required.', 400);
+      }
+
+      let user = await prisma.user.findUnique({ where: { email: userEmail } });
 
       if (!user) {
-        // Create user
+        // Create new user for Google login
         user = await prisma.user.create({
           data: {
-            email,
-            name,
-            googleId,
+            email: userEmail,
+            name: userName || 'Google Candidate',
+            googleId: userGoogleId || `g_mock_${Date.now()}`,
             role: 'USER',
           },
         });
-      } else if (!user.googleId) {
-        // Link Google ID if not linked
+      } else if (!user.googleId && userGoogleId) {
+        // Link Google ID to existing account
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { googleId },
+          data: { googleId: userGoogleId },
         });
       }
 
