@@ -26,7 +26,24 @@ const cleanClientUrl = rawClientUrl.replace(/['"\s\r\n]/g, '').trim();
 
 app.use(
   cors({
-    origin: cleanClientUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const isGoogleOrLocal = origin === 'http://localhost:3000' || origin.includes('localhost:');
+      // Dynamically matches any deploy preview or production deployment for this repo on vercel
+      const isVercel = origin.includes('vercel.app') && origin.includes('interview-prep-platform');
+      const targetDomain = cleanClientUrl.replace(/https?:\/\//, '');
+      const isConfiguredClient = targetDomain && origin.includes(targetDomain);
+
+      if (isGoogleOrLocal || isVercel || isConfiguredClient) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
