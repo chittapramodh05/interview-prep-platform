@@ -93,9 +93,9 @@ export default function DashboardLayout({
       <div className="md:hidden border-b border-white/5 bg-[#090d16] px-6 py-4 flex justify-between items-center z-40">
         <div className="flex items-center space-x-2">
           <div className="w-7 h-7 rounded bg-gradient-to-tr from-[#8b5cf6] to-[#06b6d4] flex items-center justify-center font-bold text-white text-sm">
-            A
+            M
           </div>
-          <span className="font-outfit font-extrabold tracking-wide text-white">AURA</span>
+          <span className="font-outfit font-extrabold tracking-wide text-white">MockMaster</span>
         </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-white">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -109,9 +109,9 @@ export default function DashboardLayout({
             {/* Logo */}
             <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#8b5cf6] to-[#06b6d4] flex items-center justify-center font-bold text-white text-lg">
-                A
+                M
               </div>
-              <span className="font-outfit font-extrabold tracking-wide text-white text-xl">AURA</span>
+              <span className="font-outfit font-extrabold tracking-wide text-white text-xl">MockMaster</span>
             </div>
 
             {/* Navigation links */}

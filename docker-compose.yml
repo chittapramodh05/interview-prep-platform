@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: aura-db
+    container_name: mockmaster-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -18,7 +18,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: aura-backend
+    container_name: mockmaster-backend
     restart: always
     ports:
       - "5005:5005"
@@ -37,7 +37,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: aura-frontend
+    container_name: mockmaster-frontend
     restart: always
     ports:
       - "3000:3000"

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AURA | AI-Powered Interview Coach & Career Assistant',
+  title: 'MockMaster | AI-Powered Interview Coach & Career Assistant',
   description: 'Accelerate your career preparation with real-time AI mock interviews, PDF resume parser, ATS optimization checks, and automated coding practice.',
   keywords: 'interview prep, AI mock interview, ATS resume optimizer, code practice, career helper, mock interviews, developer interview',
 };

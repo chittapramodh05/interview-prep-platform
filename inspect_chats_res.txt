@@ -1,0 +1,24 @@
+
+=== Database: Current Db (C:/Users/pramo/AppData/Roaming/Antigravity/User/globalStorage/state.vscdb) ===
+Found 3 matches:
+Key: chat.ChatSessionStore.index
+Value: {"version":1,"entries":{}}
+---
+Key: chat.participantNameRegistry
+Value: {"vscode":["github"],"workspace":["github"],"terminal":["github"],"github":["github"],"azure":["ms-azuretools"],"teams":["teamsdevapp"],"quantum":["quantum"],"apicenter":["apidev"],"stripe":["stripe"],"mongodb":["mongodb"],"databricks":["databricks"],"playwright":["ms-playwright"],"figma":["figma"],
+---
+Key: chat.workspaceTransfer
+Value: []
+---
+
+=== Database: Backup Db (C:/Users/pramo/AppData/Roaming/Antigravity/User/globalStorage/state.vscdb.backup) ===
+Found 3 matches:
+Key: chat.ChatSessionStore.index
+Value: {"version":1,"entries":{}}
+---
+Key: chat.participantNameRegistry
+Value: {"vscode":["github"],"workspace":["github"],"terminal":["github"],"github":["github"],"azure":["ms-azuretools"],"teams":["teamsdevapp"],"quantum":["quantum"],"apicenter":["apidev"],"stripe":["stripe"],"mongodb":["mongodb"],"databricks":["databricks"],"playwright":["ms-playwright"],"figma":["figma"],
+---
+Key: chat.workspaceTransfer
+Value: []
+---

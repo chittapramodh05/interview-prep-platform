@@ -10,9 +10,77 @@ export interface TestCase {
 
 export class CodeRunnerService {
   /**
-   * Run JavaScript code against test cases in a Node.js VM sandbox
+   * Helper to scan JS code for dangerous structures to enforce basic sandbox security
+   */
+  private static isJsSafe(code: string): { safe: boolean; reason?: string } {
+    const dangerousJsPatterns = [
+      /\bprocess\b/i,
+      /\brequire\s*\(/i,
+      /\bimport\s/i,
+      /\bglobal\b/i,
+      /\bconstructor\b/i,
+      /\beval\s*\(/i,
+      /\bFunction\s*\(/i,
+      /\bchild_process\b/i,
+      /\bfs\./i
+    ];
+    for (const pattern of dangerousJsPatterns) {
+      if (pattern.test(code)) {
+        return { safe: false, reason: `Use of restricted global keyword or module: '${pattern.source}'` };
+      }
+    }
+    return { safe: true };
+  }
+
+  /**
+   * Helper to scan Python code for dangerous system libraries before child process exec
+   */
+  private static isPythonSafe(code: string): { safe: boolean; reason?: string } {
+    const dangerousPyPatterns = [
+      /\bimport\s+os\b/i,
+      /\bimport\s+sys\b/i,
+      /\bimport\s+subprocess\b/i,
+      /\bimport\s+shutil\b/i,
+      /\bimport\s+socket\b/i,
+      /\bimport\s+urllib\b/i,
+      /\bimport\s+requests\b/i,
+      /\bfrom\s+os\b/i,
+      /\bfrom\s+sys\b/i,
+      /\bfrom\s+subprocess\b/i,
+      /\beval\s*\(/i,
+      /\bexec\s*\(/i,
+      /\bopen\s*\(/i,
+      /\bwrite\s*\(/i
+    ];
+    for (const pattern of dangerousPyPatterns) {
+      if (pattern.test(code)) {
+        return { safe: false, reason: `Use of restricted library or function: '${pattern.source}'` };
+      }
+    }
+    return { safe: true };
+  }
+
+  /**
+   * Run JavaScript code against test cases in a Node.js VM sandbox with security validations
    */
   static runJavaScript(code: string, testCases: TestCase[], functionName: string) {
+    const securityCheck = this.isJsSafe(code);
+    if (!securityCheck.safe) {
+      return {
+        status: 'RUNTIME_ERROR' as const,
+        passedCount: 0,
+        totalCount: testCases.length,
+        results: testCases.map((tc, idx) => ({
+          testCaseIndex: idx,
+          input: tc.input,
+          expected: tc.output,
+          actual: `Security Violation: ${securityCheck.reason}`,
+          passed: false,
+          error: true,
+        }))
+      };
+    }
+
     const results = [];
     let passedCount = 0;
     let runtimeError = false;
@@ -20,7 +88,7 @@ export class CodeRunnerService {
     for (let i = 0; i < testCases.length; i++) {
       const tc = testCases[i];
       const context = vm.createContext({});
-      
+
       // Construct wrapper script that runs the function and returns its result
       const scriptCode = `
         ${code}
@@ -34,7 +102,7 @@ export class CodeRunnerService {
         const result = vm.runInNewContext(scriptCode, context, { timeout: 1000 });
         const passed = JSON.stringify(result) === JSON.stringify(tc.output);
         if (passed) passedCount++;
-        
+
         results.push({
           testCaseIndex: i,
           input: tc.input,
@@ -71,16 +139,33 @@ export class CodeRunnerService {
   }
 
   /**
-   * Run Python code by writing it to a temp file and spawning a process, with mock fallback
+   * Run Python code by writing it to a temp file after safety checks and spawning a process
    */
   static async runPython(code: string, testCases: TestCase[], functionName: string): Promise<any> {
+    const securityCheck = this.isPythonSafe(code);
+    if (!securityCheck.safe) {
+      return {
+        status: 'RUNTIME_ERROR' as const,
+        passedCount: 0,
+        totalCount: testCases.length,
+        results: testCases.map((tc, idx) => ({
+          testCaseIndex: idx,
+          input: tc.input,
+          expected: tc.output,
+          actual: `Security Violation: ${securityCheck.reason}`,
+          passed: false,
+          error: true,
+        }))
+      };
+    }
+
     const tempDir = path.join(__dirname, '../../scratch_runner');
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
     const tempFile = path.join(tempDir, `runner_${Date.now()}.py`);
-    
+
     // Construct Python execution wrapper
     let pyScript = `${code}\n\n`;
     pyScript += `import json\n`;
@@ -90,7 +175,6 @@ export class CodeRunnerService {
     pyScript += `for i, tc in enumerate(test_cases):\n`;
     pyScript += `    try:\n`;
     pyScript += `        res = ${functionName}(*tc['input'])\n`;
-        // Handle serialization
     pyScript += `        passed = json.dumps(res) == json.dumps(tc['output'])\n`;
     pyScript += `        if passed:\n`;
     pyScript += `            passed_count += 1\n`;
@@ -110,7 +194,7 @@ export class CodeRunnerService {
           if (fs.existsSync(tempFile)) {
             fs.unlinkSync(tempFile);
           }
-        } catch (_) {}
+        } catch (_) { }
 
         if (error || stderr) {
           // If Python fails to run (e.g. python not found on user machine), fall back to checking if code looks correct

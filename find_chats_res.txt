@@ -1,0 +1,36 @@
+
+Workspace DB: 116db015cac1e0b24f8d6f8dae6af68b
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []
+
+Workspace DB: 6c5ba0a02005d93a3d73e2c34bfa6236
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []
+
+Workspace DB: 7dd7d6dfc651f663acc33b79ce0ff377
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []
+
+Workspace DB: b40854672490603ed1075d65d115950c
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []
+
+Workspace DB: cab8c6bc0f0571279e2f4d293f2c4788
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []
+
+Workspace DB: ded678309e4ece59890ac45df960b594
+  Key: chat.ChatSessionStore.index
+  Value: {"version":1,"entries":{}}
+  Key: chat.customModes
+  Value: []

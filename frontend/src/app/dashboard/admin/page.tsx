@@ -139,7 +139,7 @@ export default function AdminPanelPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-cyan-600/10 via-cyan-500/5 to-transparent p-6 rounded-2xl border border-cyan-500/10">
         <div>
           <h2 className="font-outfit text-2xl font-bold text-white flex items-center gap-2">
-            AURA System Console <Shield className="w-5 h-5 text-cyan-400" />
+            MockMaster System Console <Shield className="w-5 h-5 text-cyan-400" />
           </h2>
           <p className="text-sm text-gray-400 mt-1">Platform management console. Monitor usage logs, audit users, and create coding challenges.</p>
         </div>

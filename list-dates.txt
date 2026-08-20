@@ -1,0 +1,32 @@
+
+
+FullName      : C:\Users\pra
+                mo\.gemini\a
+                ntigravity
+LastWriteTime : 11-08-2026 
+                17:08:10
+
+FullName      : C:\Users\pra
+                mo\.gemini\a
+                ntigravity-b
+                ackup
+LastWriteTime : 08-06-2026 
+                16:32:55
+
+FullName      : C:\Users\pra
+                mo\.gemini\a
+                ntigravity\c
+                onversations
+LastWriteTime : 11-08-2026 
+                17:40:03
+
+FullName      : C:\Users\pra
+                mo\.gemini\a
+                ntigravity-b
+                ackup\conver
+                sations
+LastWriteTime : 08-06-2026 
+                16:32:55
+
+
+

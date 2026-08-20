@@ -41,10 +41,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#8b5cf6] to-[#06b6d4] flex items-center justify-center font-bold text-white text-lg tracking-wider">
-              A
+              M
             </div>
             <span className="font-outfit text-xl font-extrabold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              AURA
+              MockMaster
             </span>
           </Link>
 
@@ -271,11 +271,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center space-x-2 mb-4 sm:mb-0">
             <div className="w-6 h-6 rounded bg-gradient-to-tr from-[#8b5cf6] to-[#06b6d4] flex items-center justify-center font-bold text-white text-xs">
-              A
+              M
             </div>
-            <span className="font-outfit font-extrabold text-gray-400">AURA CO.</span>
+            <span className="font-outfit font-extrabold text-gray-400">MockMaster CO.</span>
           </div>
-          <p>&copy; {new Date().getFullYear()} AURA Career Assistant. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} MockMaster Career Assistant. All rights reserved.</p>
         </div>
       </footer>
     </div>

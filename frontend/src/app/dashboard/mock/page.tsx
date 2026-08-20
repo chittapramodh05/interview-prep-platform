@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../../services/api';
-import { 
-  Mic, 
-  Video, 
-  VideoOff, 
-  Volume2, 
-  Loader2, 
-  ArrowRight, 
-  CheckCircle, 
+import {
+  Mic,
+  Video,
+  VideoOff,
+  Volume2,
+  Loader2,
+  ArrowRight,
+  CheckCircle,
   HelpCircle,
   Clock,
   ChevronRight,
@@ -22,7 +22,7 @@ import {
 export default function MockInterviewPage() {
   // Navigation States: 'SETUP' | 'INTERVIEW' | 'REPORT'
   const [gameState, setGameState] = useState<'SETUP' | 'INTERVIEW' | 'REPORT'>('SETUP');
-  
+
   // Setup Parameters
   const [jobRole, setJobRole] = useState('Frontend Developer');
   const [difficulty, setDifficulty] = useState('MEDIUM');
@@ -33,7 +33,7 @@ export default function MockInterviewPage() {
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
-  
+
   // Loading & Tracking
   const [loading, setLoading] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
@@ -52,6 +52,10 @@ export default function MockInterviewPage() {
   const [recognizer, setRecognizer] = useState<any>(null);
   const [isRecording, setIsRecording] = useState(false);
 
+  // Voice Speech Synthesis (TTS) State
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   // Report Details
   const [report, setReport] = useState<any>(null);
 
@@ -63,7 +67,7 @@ export default function MockInterviewPage() {
           setMediaStream(stream);
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(() => {});
+            videoRef.current.play().catch(() => { });
           }
         })
         .catch((err) => {
@@ -93,8 +97,19 @@ export default function MockInterviewPage() {
       rec.lang = 'en-US';
 
       rec.onresult = (event: any) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        setUserAnswer((prev) => prev + (prev ? ' ' : '') + transcript);
+        let transcriptSegment = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcriptSegment += event.results[i][0].transcript;
+          }
+        }
+        if (transcriptSegment) {
+          setUserAnswer((prev) => {
+            const cleanSegment = transcriptSegment.trim();
+            if (!cleanSegment) return prev;
+            return prev ? `${prev} ${cleanSegment}` : cleanSegment;
+          });
+        }
       };
 
       rec.onerror = (err: any) => {
@@ -124,6 +139,54 @@ export default function MockInterviewPage() {
       setIsRecording(true);
     }
   };
+
+  // Text-To-Speech (TTS) engine
+  const speakText = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+
+    if (!ttsEnabled) return;
+
+    // Filter out markdown syntax
+    const cleanText = text.replace(/[*_`#]/g, '');
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const voices = window.speechSynthesis.getVoices();
+    const synthVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB')) || voices[0];
+    if (synthVoice) {
+      utterance.voice = synthVoice;
+    }
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Auto-read question on advancement
+  useEffect(() => {
+    if (gameState === 'INTERVIEW' && questions.length > 0 && questions[currentIdx] && ttsEnabled) {
+      const timer = setTimeout(() => {
+        speakText(questions[currentIdx]);
+      }, 400); // short timeout to let browser environment initialize
+      return () => clearTimeout(timer);
+    }
+  }, [currentIdx, gameState, ttsEnabled]);
+
+  // Clean-up speech synthesis
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Camera metrics state hooks
   const [eyeContact, setEyeContact] = useState(95);
@@ -198,9 +261,19 @@ export default function MockInterviewPage() {
 
   const handleAnswerSubmit = async () => {
     if (!interviewId || evaluating) return;
-    
+
     setEvaluating(true);
     setTimerActive(false);
+
+    // Stop speaking/recording when submitting answer
+    if (isRecording && recognizer) {
+      recognizer.stop();
+      setIsRecording(false);
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
 
     const questionText = questions[currentIdx];
     const answerText = userAnswer.trim() || '(No response supplied by candidate)';
@@ -229,7 +302,7 @@ export default function MockInterviewPage() {
       setErrorMsg('Failed to evaluate answer. Advancing nonetheless...');
       // Fake insert to not break array lengths
       setAnswersFeedback(prev => [...prev, { question: questionText, userAnswer: answerText, aiScore: 40, aiFeedback: 'Connection error during analysis.' }]);
-      
+
       if (currentIdx + 1 < questions.length) {
         setCurrentIdx(prev => prev + 1);
         setUserAnswer('');
@@ -249,7 +322,7 @@ export default function MockInterviewPage() {
     try {
       // Mark as completed
       await api.post(`/interview/${interviewId}/finish`);
-      
+
       // Pull complete detailed report
       const response = await api.get(`/interview/report/${interviewId}`);
       setReport(response.data.data);
@@ -270,6 +343,14 @@ export default function MockInterviewPage() {
     setAnswersFeedback([]);
     setReport(null);
     setGameState('SETUP');
+    if (isRecording && recognizer) {
+      recognizer.stop();
+      setIsRecording(false);
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
   };
 
   return (
@@ -359,7 +440,7 @@ export default function MockInterviewPage() {
       {/* 2. ACTIVE INTERVIEW SIMULATOR */}
       {gameState === 'INTERVIEW' && questions.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Question and Answer Area (left) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6 sm:p-8 space-y-6">
@@ -369,20 +450,61 @@ export default function MockInterviewPage() {
                   Question {currentIdx + 1} of {questions.length}
                 </span>
 
-                <div className="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 text-sm">
-                  <Clock className="w-4 h-4 text-[#06b6d4]" />
-                  <span className={`font-mono font-bold ${timeLeft < 20 ? 'text-red-400 animate-pulse' : 'text-gray-200'}`}>
-                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                  </span>
+                <div className="flex items-center space-x-4">
+                  {/* TTS Toggle */}
+                  <label className="flex items-center space-x-2 text-xs font-bold text-gray-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={ttsEnabled}
+                      onChange={(e) => {
+                        setTtsEnabled(e.target.checked);
+                        if (!e.target.checked && typeof window !== 'undefined' && window.speechSynthesis) {
+                          window.speechSynthesis.cancel();
+                          setIsSpeaking(false);
+                        }
+                      }}
+                      className="rounded border-white/10 bg-white/5 text-[#8b5cf6] focus:ring-0 focus:ring-offset-0"
+                    />
+                    <span>Auto-Read Questions</span>
+                  </label>
+
+                  <div className="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 text-sm">
+                    <Clock className="w-4 h-4 text-[#06b6d4]" />
+                    <span className={`font-mono font-bold ${timeLeft < 20 ? 'text-red-400 animate-pulse' : 'text-gray-200'}`}>
+                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Question Text */}
-              <div className="border border-[#8b5cf6]/20 bg-[#8b5cf6]/5 p-5 rounded-xl">
-                <span className="text-xs font-black uppercase text-[#a78bfa] tracking-wider block mb-1">Interviewer Question</span>
-                <p className="text-base text-white leading-relaxed font-semibold">
-                  {questions[currentIdx]}
-                </p>
+              {/* Question Text with Speaker Button */}
+              <div className="border border-[#8b5cf6]/20 bg-[#8b5cf6]/5 p-5 rounded-xl flex justify-between items-start gap-4">
+                <div className="flex-1 opacity-100">
+                  <span className="text-xs font-black uppercase text-[#a78bfa] tracking-wider block mb-1">Interviewer Question</span>
+                  <p className="text-base text-white leading-relaxed font-semibold">
+                    {questions[currentIdx]}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSpeaking) {
+                      if (typeof window !== 'undefined' && window.speechSynthesis) {
+                        window.speechSynthesis.cancel();
+                        setIsSpeaking(false);
+                      }
+                    } else {
+                      speakText(questions[currentIdx]);
+                    }
+                  }}
+                  className={`p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${isSpeaking
+                      ? 'bg-[#8b5cf6]/20 border-[#8b5cf6]/50 text-white animate-pulse'
+                      : 'bg-[#030712] border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  title={isSpeaking ? "Stop Reading" : "Read Aloud"}
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Answer Text Area */}
@@ -391,18 +513,28 @@ export default function MockInterviewPage() {
                   <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Your Response
                   </label>
-                  <button
-                    type="button"
-                    onClick={toggleVoiceRecording}
-                    className={`flex items-center space-x-1 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                      isRecording 
-                        ? 'bg-red-500/10 border-red-500/30 text-red-400 animate-pulse' 
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Mic className="w-3.5 h-3.5" />
-                    <span>{isRecording ? 'Listening (Click to Stop)...' : 'Answer with Voice'}</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {isRecording && (
+                      <div className="flex items-center space-x-0.5 px-2">
+                        <span className="w-0.5 h-3 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                        <span className="w-0.5 h-4 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                        <span className="w-0.5 h-2.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+                        <span className="w-0.5 h-4.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+                        <span className="w-0.5 h-3 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }} />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={toggleVoiceRecording}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${isRecording
+                          ? 'bg-red-500/10 border-red-500/30 text-[#ef4444] animate-pulse'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                      <span>{isRecording ? 'Listening (Click to Stop)...' : 'Answer with Voice'}</span>
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={userAnswer}
@@ -444,11 +576,11 @@ export default function MockInterviewPage() {
             <div className="glass-card aspect-[4/3] rounded-2xl overflow-hidden relative flex flex-col items-center justify-center bg-[#090d16] border border-white/5">
               {cameraActive ? (
                 <>
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                   <div className="absolute top-4 right-4 flex items-center space-x-1.5 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider z-10">
@@ -484,7 +616,7 @@ export default function MockInterviewPage() {
             {/* Confidence/Pace tips widget */}
             <div className="glass-card p-5 space-y-4">
               <h4 className="text-xs uppercase tracking-wider text-gray-500 font-bold">Confidence Indicator</h4>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-400 font-semibold">Eye Contact</span>
@@ -520,7 +652,7 @@ export default function MockInterviewPage() {
           {/* Main Card */}
           <div className="glass-card p-6 sm:p-10 border border-white/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-[#8b5cf6]/10 to-transparent pointer-events-none" />
-            
+
             <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-white/5 mb-8">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#8b5cf6] to-[#06b6d4] flex flex-col items-center justify-center text-white shrink-0 shadow-lg shadow-violet-500/20">
                 <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Score</span>

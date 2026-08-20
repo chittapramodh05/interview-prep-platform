@@ -1,6 +1,6 @@
-# AURA | AI-Powered Interview Coach & Career Assistant Platform
+# MockMaster | AI-Powered Interview Coach & Career Assistant Platform
 
-AURA is a production-level, SaaS-style full-stack application designed to help software engineers accelerate their career preparation. Candidates can analyze resumes for ATS optimization, practice technical/behavioral mock interviews with real-time AI feedback, write solutions inside an integrated Monaco code editor arena, and track progress over time.
+MockMaster is a production-level, SaaS-style full-stack application designed to help software engineers accelerate their career preparation. Candidates can analyze resumes for ATS optimization, practice technical/behavioral mock interviews with real-time AI feedback, write solutions inside an integrated Monaco code editor arena, and track progress over time.
 
 ---
 
@@ -62,7 +62,7 @@ Ensure you have **Docker** and **Docker Compose** installed.
    ```bash
    docker-compose up --build
    ```
-3. AURA will be available at:
+3. MockMaster will be available at:
    - **Frontend**: [http://localhost:3000](http://localhost:3000)
    - **Backend API**: [http://localhost:5000/health](http://localhost:5000/health)
 

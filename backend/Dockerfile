@@ -1,6 +1,8 @@
 # Multi-stage build for production-ready Express backend
 FROM node:20-alpine AS builder
 
+RUN apk add --no-cache libc6-compat openssl
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -11,6 +13,8 @@ RUN npm run build
 
 # Production Runner stage
 FROM node:20-alpine
+
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 COPY package*.json ./
