@@ -20,6 +20,9 @@ export default function LoginPage() {
   const [showMockModal, setShowMockModal] = useState(false);
   const [googleClientReady, setGoogleClientReady] = useState(false);
 
+  const rawClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleClientId = rawClientId ? rawClientId.replace(/['"\s\r\n]/g, '').trim() : null;
+
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
       email: '',
@@ -28,11 +31,10 @@ export default function LoginPage() {
   });
 
   const initGoogleSdk = () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+    if (googleClientId && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       setGoogleClientReady(true);
       (window as any).google.accounts.id.initialize({
-        client_id: clientId,
+        client_id: googleClientId,
         callback: async (response: any) => {
           setGoogleLoading(true);
           setErrorMsg(null);
@@ -59,8 +61,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     // If client ID exists and SDK is loaded, render button
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && googleClientReady && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+    if (googleClientId && googleClientReady && typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       const container = document.getElementById('google-btn-container');
       if (container) {
         (window as any).google.accounts.id.renderButton(
@@ -69,7 +70,7 @@ export default function LoginPage() {
         );
       }
     }
-  }, [googleClientReady]);
+  }, [googleClientReady, googleClientId]);
 
   const onSubmit = async (data: any) => {
     setLoading(true);
@@ -253,7 +254,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
+          {googleClientId ? (
             <div className="w-full flex justify-center mt-2 min-h-[46px]">
               <div id="google-btn-container" className="w-full flex justify-center" />
             </div>
