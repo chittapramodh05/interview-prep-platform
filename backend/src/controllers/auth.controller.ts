@@ -5,7 +5,9 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/db';
 import { successResponse, errorResponse } from '../utils/response';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const rawGoogleClientId = process.env.GOOGLE_CLIENT_ID || '';
+const cleanGoogleClientId = rawGoogleClientId.replace(/['"\s\r\n]/g, '').trim();
+const googleClient = new OAuth2Client(cleanGoogleClientId);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'supersecretrefreshkey';
@@ -166,7 +168,7 @@ export class AuthController {
           data: { refreshToken: null },
         });
       }
-    } catch (_) {}
+    } catch (_) { }
 
     res.clearCookie('refreshToken');
     return successResponse(res, 'Logged out successfully.');
@@ -186,7 +188,7 @@ export class AuthController {
         try {
           const ticket = await googleClient.verifyIdToken({
             idToken: credentialToken,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: cleanGoogleClientId,
           });
           const payload = ticket.getPayload();
           if (payload) {
