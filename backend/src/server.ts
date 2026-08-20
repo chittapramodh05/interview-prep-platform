@@ -20,9 +20,13 @@ const PORT = process.env.PORT || 5000;
 
 // Security and utility Middlewares
 app.use(helmet());
+// Sanitize CLIENT_URL to prevent header errors if user copy-pasted with quotes/spaces
+const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const cleanClientUrl = rawClientUrl.replace(/['"\s\r\n]/g, '').trim();
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: cleanClientUrl,
     credentials: true,
   })
 );
